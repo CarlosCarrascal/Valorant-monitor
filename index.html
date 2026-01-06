@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Votaciones LIVE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: sans-serif;
+        }
+
+        .bar-fill {
+            transition: width 1s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8 bg-slate-900">
+
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+            <div>
+                <h1
+                    class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                    📊 Monitor Votaciones
+                </h1>
+                <p class="text-slate-400 text-sm">Datos en Tiempo Real</p>
+            </div>
+            <div id="statusIndicator" class="text-xs font-bold text-yellow-500">Conectando...</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-slate-800 p-4 rounded border border-slate-700">
+                <div class="text-slate-500 text-xs uppercase">Total Votos</div>
+                <div id="totalVotes" class="text-2xl font-bold text-white">0</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded border border-slate-700">
+                <div class="text-slate-500 text-xs uppercase">Estado</div>
+                <div class="text-xl font-bold text-emerald-400">ACTIVO</div>
+            </div>
+        </div>
+
+        <div id="rolesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-10 text-slate-500">Cargando datos...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/votes';
+
+        const COLORS = {
+            'Duelist': '#ef4444', 'Initiator': '#eab308', 'Sentinel': '#10b981',
+            'Smoker': '#a855f7', 'Flex': '#f97316', 'Sixth': '#94a3b8'
+        };
+
+        async function fetchData() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Error API");
+                const data = await response.json();
+                processVotes(data.votes || []);
+
+                document.getElementById('statusIndicator').innerHTML = '<span class="text-emerald-500">● EN VIVO</span>';
+            } catch (error) {
+                console.error(error);
+                document.getElementById('statusIndicator').innerHTML = '<span class="text-red-500">● OFFLINE</span>';
+            }
+        }
+
+        function processVotes(votes) {
+            document.getElementById('totalVotes').innerText = votes.length;
+            const stats = {};
+            Object.keys(COLORS).forEach(r => stats[r] = {});
+
+            votes.forEach(vote => {
+                if (!vote.team_hash) return;
+                const separator = vote.team_hash.includes('||') ? '||' : '|';
+                const parts = vote.team_hash.split(separator);
+
+                if (separator === '||') {
+                    parts.forEach(p => {
+                        const [name, role] = p.split('|');
+                        if (stats[role]) stats[role][name] = (stats[role][name] || 0) + 1;
+                    });
+                } else {
+                    for (let i = 0; i < parts.length; i += 2) {
+                        if (stats[parts[i + 1]]) stats[parts[i + 1]][parts[i]] = (stats[parts[i + 1]][parts[i]] || 0) + 1;
+                    }
+                }
+            });
+            renderGrid(stats);
+        }
+
+        function renderGrid(stats) {
+            const container = document.getElementById('rolesGrid');
+            container.innerHTML = '';
+
+            Object.keys(COLORS).forEach(role => {
+                const players = Object.entries(stats[role]).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                const max = players.length ? players[0][1] : 1; // Para la barra relativa al primero
+
+                let html = `<div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
+                    <div class="p-3 bg-slate-900 border-b border-slate-700 flex justify-between">
+                        <h3 class="font-bold uppercase text-sm" style="color:${COLORS[role]}">${role}</h3>
+                    </div>
+                    <div class="p-4 space-y-3">`;
+
+                players.forEach(([name, count], i) => {
+                    const percent = (count / max) * 100;
+                    html += `
+                        <div>
+                            <div class="flex justify-between text-xs mb-1 text-slate-300">
+                                <span>${i === 0 ? '🏆' : '#' + (i + 1)} ${name}</span>
+                                <span class="font-mono opacity-70">${count}</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full" style="width:${percent}%; background:${COLORS[role]}; opacity:${i === 0 ? 1 : 0.6}"></div>
+                            </div>
+                        </div>`;
+                });
+                container.innerHTML += html + `</div></div>`;
+            });
+        }
+
+        fetchData();
+        setInterval(fetchData, 15000); 
+    </script>
+</body>
+
+</html>
