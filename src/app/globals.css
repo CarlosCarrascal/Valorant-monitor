@@ -4,8 +4,8 @@
   --valorant-red: #ff4655;
   --valorant-dark: #0f1923;
   --bg-dark: #09090b;
-  --card-bg: rgba(24, 24, 27, 0.6);
-  --border-color: rgba(255, 255, 255, 0.1);
+  --card-bg: rgba(20, 25, 31, 0.7); /* Un poco más claro para contrastar con el fondo sólido */
+  --border-color: rgba(255, 255, 255, 0.08);
   
   /* Roles Colors */
   --role-duelist: #ff4655;
@@ -15,42 +15,50 @@
   --role-flex: #ff6b00;
 }
 
+/* --- FONDO SÓLIDO (Sin gradientes, sin errores) --- */
+html {
+  /* Pintamos la base del navegador del mismo color */
+  background-color: var(--bg-dark);
+}
+
 body {
+  /* Pintamos el cuerpo del mismo color */
   background-color: var(--bg-dark);
   color: #ece8e1;
-  font-family: 'DIN Next W1G', sans-serif; 
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+  font-family: 'DIN Next W1G', system-ui, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
 }
 
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff4655;
+}
+
+/* Efecto Panel Técnico */
 .tech-panel {
   background: var(--card-bg);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(0px); /* Quitamos blur para rendimiento y nitidez en fondo sólido */
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-
-.tech-border-b {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.live-dot {
-  box-shadow: 0 0 0 0 rgba(255, 70, 85, 0.7);
-  animation: pulse-red 2s infinite;
-}
-
-@keyframes pulse-red {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 70, 85, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 70, 85, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 70, 85, 0); }
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .tech-label {
   font-family: monospace;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   font-size: 0.65rem;
-  color: #8b9bb4;
+  color: #64748b;
+  font-weight: 700;
 }
