@@ -31,13 +31,15 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Utilidad Glassmorphism Hover*/
 @utility glass-hover {
   @apply transition-all duration-300;
-}
-@utility glass-hover:hover {
-  background: rgba(30, 41, 59, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 20px rgba(255, 70, 85, 0.15); /* Sutil brillo rojo al hover */
+
+  &:hover {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(255, 70, 85, 0.15);
+  }
 }
 
 body {
