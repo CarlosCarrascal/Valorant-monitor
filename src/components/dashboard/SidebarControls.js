@@ -1,54 +1,81 @@
-import { Settings2, Plus, Minus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Database, Clock } from 'lucide-react';
 
-export default function SidebarControls({ composition, setComposition, teamSize }) {
-    const handleAdjust = (role, delta) => {
-        const current = composition[role] || 0;
-        const newValue = Math.max(0, Math.min(5, current + delta)); // Max 5 por rol
-        setComposition(prev => ({ ...prev, [role]: newValue }));
+export default function SidebarControls({ voters = [], totalCandidates = 0, sessionEnd }) {
+    
+    const calculateTimeLeft = (end) => {
+        if (!end) return "--:--:--:--";
+        const now = new Date().getTime();
+        const target = new Date(Number(end)).getTime();
+        const distance = target - now;
+
+        if (distance < 0) return "SESSION CLOSED";
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        return `${days}d ${hours}h ${minutes}m ${seconds.toString().padStart(2, '0')}s`;
     };
 
+    const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(sessionEnd));
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeLeft(calculateTimeLeft(sessionEnd));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [sessionEnd]);
+
     return (
-        <div className="tech-panel p-6 rounded-sm relative overflow-hidden">
-            <h2 className="tech-label mb-6 flex items-center gap-2 text-white border-b border-white/10 pb-4">
-                <Settings2 size={14} /> TACTICAL COMPOSITION
-            </h2>
+        // CONTENEDOR GLASS "APPLE STYLE"
+        // bg-white/[0.03]: Fondo casi invisible
+        // backdrop-blur-2xl: Desenfoque muy suave y premium
+        // border-white/[0.08]: Borde sutil, apenas perceptible
+        <div className="flex flex-col gap-6 p-8 rounded-3xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl shadow-2xl">
             
-            <div className="space-y-4">
-                {Object.keys(composition).map(role => (
-                    <div key={role} className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider w-24">
-                            {role}
-                        </span>
-                        
-                        <div className="flex items-center gap-3 bg-black/40 p-1 rounded-sm border border-white/5">
-                            <button 
-                                onClick={() => handleAdjust(role, -1)}
-                                className="p-1 hover:bg-red-500/20 hover:text-red-500 text-slate-500 transition-colors rounded"
-                            >
-                                <Minus size={14} />
-                            </button>
-                            
-                            <span className={`font-mono font-bold w-4 text-center ${composition[role] > 0 ? 'text-white' : 'text-slate-700'}`}>
-                                {composition[role]}
-                            </span>
-                            
-                            <button 
-                                onClick={() => handleAdjust(role, 1)}
-                                className="p-1 hover:bg-[#00d4aa]/20 hover:text-[#00d4aa] text-slate-500 transition-colors rounded"
-                            >
-                                <Plus size={14} />
-                            </button>
-                        </div>
-                    </div>
-                ))}
+            {/* 1. TIMER SECTION */}
+            <div>
+                <span className="text-[11px] font-medium text-white/40 tracking-[0.2em] uppercase mb-4 block flex items-center gap-2">
+                    <Clock size={12} className="text-white/40" />
+                    Time Remaining
+                </span>
+                
+                {/* Reloj Monocromático: Blanco puro, sin colores extraños */}
+                <div className="text-4xl xl:text-5xl font-light text-white tracking-tight leading-none font-mono whitespace-nowrap">
+                    {timeLeft}
+                </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/5">
-                <div className="flex justify-between items-center bg-white/5 p-3 rounded-sm border border-white/5">
-                    <span className="text-[10px] font-mono text-slate-400">SQUAD SIZE</span>
-                    <span className={`text-xl font-black font-mono ${teamSize > 6 ? "text-red-500" : "text-[#00d4aa]"}`}>
-                        {teamSize}<span className="text-slate-600 text-sm">/6</span>
+            {/* Separador Sutil */}
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+            {/* 2. DATA METRICS */}
+            <div className="grid grid-cols-2 gap-8">
+                <div>
+                    <span className="text-[11px] font-medium text-white/40 tracking-widest uppercase mb-1 block">
+                        Live Votes
                     </span>
+                    <div className="flex items-center gap-3">
+                        <Users size={16} className="text-white/80" />
+                        <span className="text-2xl font-light text-white font-mono">
+                            {voters.length}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Borde izquierdo sutil para separar */}
+                <div className="pl-8 border-l border-white/5">
+                    <span className="text-[11px] font-medium text-white/40 tracking-widest uppercase mb-1 block">
+                        Candidates
+                    </span>
+                    <div className="flex items-center gap-3">
+                        <Database size={16} className="text-white/80" />
+                        <span className="text-2xl font-light text-white font-mono">
+                            {totalCandidates}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
