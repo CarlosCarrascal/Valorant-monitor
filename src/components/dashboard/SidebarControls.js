@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { Users, Database, Clock } from 'lucide-react';
 
 export default function SidebarControls({ voters = [], totalCandidates = 0, sessionEnd }) {
-    
-    // Cambiamos la lógica para devolver un OBJETO separado
+
     const calculateTimeLeft = (end) => {
         if (!end) return { d: '--', h: '--', m: '--', s: '--' };
-        
+
         const now = new Date().getTime();
         const target = new Date(Number(end)).getTime();
         const distance = target - now;
@@ -31,19 +30,18 @@ export default function SidebarControls({ voters = [], totalCandidates = 0, sess
     }, [sessionEnd]);
 
     return (
-        // CONTENEDOR GLASS "APPLE STYLE" (Tu diseño original intacto)
         <div className="flex flex-col gap-8 p-8 rounded-3xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl shadow-2xl">
-            
-            {/* 1. TIMER SECTION */}
+
+            {/* TIMER SECTION */}
             <div>
                 <span className="text-[11px] font-medium text-white/40 tracking-[0.2em] uppercase mb-6 block flex items-center gap-2">
                     <Clock size={12} className="text-white/40" />
                     Time Remaining
                 </span>
-                
-                {/* NUEVO LAYOUT: Split en 4 columnas */}
+
+                {/* Split en 4 columnas */}
                 <div className="flex justify-between items-start">
-                    
+
                     {/* DAYS */}
                     <div className="flex flex-col items-center">
                         <span className="text-4xl xl:text-5xl font-light text-white font-mono leading-none mb-2">
@@ -54,7 +52,7 @@ export default function SidebarControls({ voters = [], totalCandidates = 0, sess
                         </span>
                     </div>
 
-                    {/* Separador vertical sutil */}
+                    {/* Separador vertical */}
                     <div className="w-[1px] h-10 bg-white/5 mt-1"></div>
 
                     {/* HOURS */}
@@ -93,10 +91,10 @@ export default function SidebarControls({ voters = [], totalCandidates = 0, sess
                 </div>
             </div>
 
-            {/* Separador Horizontal Sutil */}
+            {/* Separador Horizontal */}
             <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
-            {/* 2. DATA METRICS (Tu diseño original intacto) */}
+            {/* DATA METRICS */}
             <div className="grid grid-cols-2 gap-8">
                 <div>
                     <span className="text-[11px] font-medium text-white/40 tracking-widest uppercase mb-2 block">
@@ -110,7 +108,7 @@ export default function SidebarControls({ voters = [], totalCandidates = 0, sess
                     </div>
                 </div>
 
-                {/* Borde izquierdo sutil */}
+                {/* Borde izquierdo */}
                 <div className="pl-8 border-l border-white/5">
                     <span className="text-[11px] font-medium text-white/40 tracking-widest uppercase mb-2 block">
                         Candidates

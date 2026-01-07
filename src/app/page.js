@@ -23,7 +23,7 @@ export default function Page() {
 
             <div className="grid grid-cols-12 gap-8 lg:gap-16 flex-1 items-start">
                 
-                {/* SIDEBAR: Ahora con min-w-[320px] es suficiente porque el diseño es flexible */}
+                {/* SIDEBAR */}
                 <aside className="col-span-12 xl:col-span-3 min-w-[320px] pt-2 sticky top-6 z-10">
                     <SidebarControls 
                         voters={voters}
@@ -35,7 +35,7 @@ export default function Page() {
                 {/* MAIN CONTENT */}
                 <main className="col-span-12 xl:col-span-9 space-y-10 min-w-0">
                     
-                    {/* TABS Clean */}
+                    {/* TABS */}
                     <div className="flex gap-12 border-b border-white/5 pb-px overflow-x-auto">
                         <NavButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')}>
                             Final Protocol
