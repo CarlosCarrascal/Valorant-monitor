@@ -3,32 +3,32 @@ import { motion } from 'framer-motion';
 // CONFIGURACIÓN MAESTRA DE IMÁGENES
 const ROLE_AGENTS = {
     Duelist: { 
-        id: 'add6443a-41bd-e414-f6ad-e58d267f4e95', // Jett
+        id: 'add6443a-41bd-e414-f6ad-e58d267f4e95', 
         bgPos: '120% center',     
         bgSize: '120%'       
     },
     Initiator: { 
-        id: '6f2a04ca-43e0-be17-7f36-b3908627744d', // Skye
+        id: '6f2a04ca-43e0-be17-7f36-b3908627744d', 
         bgPos: 'left',  
         bgSize: '140%'        
     },
     Sentinel: { 
-        id: '1e58de9c-4950-5125-93e9-a0aee9f98746', // Cypher
+        id: '1e58de9c-4950-5125-93e9-a0aee9f98746', 
         bgPos: '1% center', 
         bgSize: '150%' 
     },
     Controller: { 
-        id: '8e253930-4c05-31dd-1b6c-968525494517', // Viper
+        id: '8e253930-4c05-31dd-1b6c-968525494517', 
         bgPos: 'center', 
         bgSize: 'cover'
     },
     Smoker: { 
-        id: '707eab51-4836-f488-046a-cda6bf494859', // Viper
+        id: '707eab51-4836-f488-046a-cda6bf494859', 
         bgPos: 'right', 
         bgSize: '110%'
     },
     Flex: { 
-        id: '601dbbe7-43ce-be57-2a40-4abd24953621', // KAY/O
+        id: '601dbbe7-43ce-be57-2a40-4abd24953621', 
         bgPos: 'left', 
         bgSize: '120%'       
     }
@@ -36,15 +36,17 @@ const ROLE_AGENTS = {
 
 const ROLE_COLORS = {
     Duelist: '#fca5a5',
-    Initiator: '#86efac',
-    Sentinel: '#93c5fd',
+    Initiator: '#519284',
+    Sentinel: '#8E843A',
     Controller: '#fcd34d',
-    Smoker: '#fcd34d',
+    Smoker: '#86efac',
     Flex: '#d8b4fe'
 };
 
 export default function LeaderboardRole({ role, candidates }) {
-    const color = ROLE_COLORS[role] || '#fff';
+    const color = ROLE_COLORS[role] || '#fff'; // Color para la izquierda
+    const listAccentColor = '#f87171';         // Rojo suave (Base)
+    const listHoverColor = '#ef4444';          // Rojo fuerte (Hover Card)
     
     const agentConfig = ROLE_AGENTS[role] || ROLE_AGENTS['Flex'];
     const agentUuid = agentConfig.id;
@@ -67,7 +69,7 @@ export default function LeaderboardRole({ role, candidates }) {
             {/* --- SECCIÓN IZQUIERDA: VISUAL --- */}
             <div className="relative w-full md:w-80 h-32 md:h-full overflow-hidden border-b md:border-b-0 md:border-r border-white/5 bg-[#0f1923]">
                 
-                {/* 1. FONDO (Layer 0) */}
+                {/* 1. FONDO */}
                 <div 
                     className="absolute inset-0 bg-no-repeat brightness-[0.3] group-hover:brightness-[0.5] transition-all duration-700 z-0"
                     style={{ 
@@ -77,13 +79,13 @@ export default function LeaderboardRole({ role, candidates }) {
                     }}
                 ></div>
                 
-                {/* 2. TINTE (Layer 1) */}
+                {/* 2. TINTE */}
                 <div 
                     className="absolute inset-0 opacity-10 mix-blend-overlay z-10"
                     style={{ backgroundColor: color }}
                 ></div>
 
-                {/* 3. RETRATO (Layer 2) */}
+                {/* 3. RETRATO */}
                 <img 
                     src={agentImage} 
                     alt={role}
@@ -93,22 +95,17 @@ export default function LeaderboardRole({ role, candidates }) {
                                transition-all duration-700 drop-shadow-2xl z-20"
                 />
 
-                {/* 4. GRADIENTE (Layer 3) */}
+                {/* 4. GRADIENTE */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0f1923] via-[#0f1923]/40 to-transparent opacity-90 z-30 pointer-events-none"></div>
 
-                {/* 5. TEXTO (Layer 4 - Máxima Prioridad) */}
-                {/* z-40 asegura que esté por encima de TODO */}
+                {/* 5. TEXTO */}
                 <div className="absolute bottom-0 left-0 p-6 w-full z-40">
                     <div className="flex flex-col items-start gap-1">
                         <div className="flex items-center gap-3">
-                            
-                            {/* Barra sólida visible */}
                             <span 
                                 className="w-1.5 h-6 rounded-full opacity-100 shadow-sm"
                                 style={{ backgroundColor: color }}
                             ></span>
-
-                            {/* Título visible */}
                             <h3 className="text-3xl font-black text-white tracking-tighter uppercase leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
                                 {role}
                             </h3>
@@ -129,20 +126,33 @@ export default function LeaderboardRole({ role, candidates }) {
                         const isTop = index === 0;
 
                         return (
-                            <div key={candidate.name} className="group/item flex items-center gap-3 relative h-8 md:h-9">
+                            <div key={candidate.name} className="flex items-center gap-3 relative h-8 md:h-9">
                                 
-                                <span className={`text-[10px] font-mono font-bold w-6 text-right ${isTop ? 'text-[#ff4655]' : 'text-slate-700'}`}>
+                                {/* NÚMERO DE RANKING */}
+                                {/* group-hover:text-[#ef4444] -> Reacciona al hover de TODA la tarjeta */}
+                                <span 
+                                    className={`text-[10px] font-mono font-bold w-6 text-right transition-colors duration-500
+                                    ${isTop ? 'text-[#f87171] group-hover:text-[#ef4444]' : 'text-slate-700'}`}
+                                >
                                     0{index + 1}
                                 </span>
 
-                                <div className="flex-1 h-full bg-white/[0.03] rounded border border-white/5 relative overflow-hidden flex items-center px-3 group-hover/item:bg-white/[0.05] transition-colors">
+                                <div className="flex-1 h-full bg-white/[0.03] rounded border border-white/5 relative overflow-hidden flex items-center px-3 transition-colors">
+                                    
+                                    {/* BARRA DE PROGRESO */}
+                                    {/* group-hover:bg-[#ef4444] -> Reacciona al hover de TODA la tarjeta */}
+                                    {/* group-hover:opacity-25 -> Se hace más visible */}
                                     <motion.div 
                                         initial={{ width: 0 }}
                                         whileInView={{ width: `${safePercent}%` }}
                                         viewport={{ once: true }}
                                         transition={{ duration: 0.8, delay: index * 0.05, ease: "easeOut" }}
-                                        className="absolute left-0 top-0 bottom-0 h-full opacity-10"
-                                        style={{ backgroundColor: isTop ? color : '#fff' }}
+                                        className={`absolute left-0 top-0 bottom-0 h-full transition-all duration-500
+                                            ${isTop 
+                                                ? 'bg-[#f87171] group-hover:bg-[#ef4444] opacity-10 group-hover:opacity-25' 
+                                                : 'bg-white opacity-5'
+                                            }
+                                        `}
                                     ></motion.div>
 
                                     <span className={`relative z-10 text-xs font-bold uppercase tracking-wide truncate ${isTop ? 'text-white' : 'text-slate-400'}`}>
