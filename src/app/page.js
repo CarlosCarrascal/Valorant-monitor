@@ -13,6 +13,7 @@ import Footer from '@/components/dashboard/Footer';
 
 export default function Page() {
     const [activeTab, setActiveTab] = useState('squad');
+    // Configuración fija
     const [comp] = useState({ Duelist: 1, Smoker: 1, Sentinel: 1, Initiator: 1, Flex: 1, Sixth: 1 });
     
     const { team, leaderboard, voters, playersList, session, loading } = useVotingData(comp);
@@ -24,7 +25,7 @@ export default function Page() {
             <div className="grid grid-cols-12 gap-8 lg:gap-16 flex-1 items-start">
                 
                 {/* SIDEBAR */}
-                <aside className="col-span-12 xl:col-span-3 min-w-[320px] pt-2 sticky top-6 z-10">
+                <aside className="col-span-12 xl:col-span-3 min-w-[340px] pt-2 sticky top-6 z-10">
                     <SidebarControls 
                         voters={voters}
                         totalCandidates={playersList.length}
@@ -49,6 +50,7 @@ export default function Page() {
                     </div>
 
                     <div className="min-h-[600px]">
+                        {/* VISTA 1: SQUAD */}
                         {activeTab === 'squad' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <AnimatePresence mode='popLayout'>
@@ -65,14 +67,21 @@ export default function Page() {
                             </div>
                         )}
 
+                        {/* VISTA 2: LEADERBOARD (AQUÍ ESTÁ EL CAMBIO) */}
+                        {/* Quitamos 'grid' y usamos 'flex-col' para que vayan uno debajo del otro */}
                         {activeTab === 'leaderboard' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-12">
+                            <div className="flex flex-col gap-6 pb-12">
                                 {['Duelist', 'Initiator', 'Sentinel', 'Smoker', 'Flex'].map(role => (
-                                    <LeaderboardRole key={role} role={role} candidates={leaderboard[role] || []} />
+                                    <LeaderboardRole 
+                                        key={role} 
+                                        role={role} 
+                                        candidates={leaderboard[role] || []} 
+                                    />
                                 ))}
                             </div>
                         )}
 
+                        {/* VISTA 3: FEED */}
                         {activeTab === 'feed' && (
                             <VoterFeed voters={voters} allCandidates={playersList} />
                         )}
