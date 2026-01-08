@@ -1,20 +1,23 @@
 import { Sword, Shield, Zap, Cloud, Activity, Users } from 'lucide-react';
 
+// COLORES PASTEL (Extraídos de tu PlayerCard.js)
 export const ROLE_COLORS = {
-    'Duelist': '#ff4655',
-    'Smoker': '#9146ff',
-    'Sentinel': '#00d4aa',
-    'Initiator': '#ffd400',
-    'Flex': '#ff6b00',
-    'Sixth': '#666666'
+    'Duelist': '#fca5a5',      // Rojo Pastel
+    'Initiator': '#86efac',    // Verde Pastel
+    'Sentinel': '#93c5fd',     // Azul Pastel
+    'Controller': '#fcd34d',   // Amarillo Pastel
+    'Smoker': '#fcd34d',       // Amarillo Pastel (Alias)
+    'Flex': '#d8b4fe',         // Morado Pastel
+    'Sixth': '#ffffff',        // Blanco
+    'Sixth Man': '#ffffff'     // Alias
 };
 
 export const ROLES_CONFIG = {
     'Duelist': { label: 'Duelistas', color: 'rose', icon: Sword, description: 'Entry fraggers y creadores de espacio.' },
-    'Initiator': { label: 'Iniciadores', color: 'amber', icon: Zap, description: 'Recopilación de información y apoyo.' },
-    'Sentinel': { label: 'Centinelas', color: 'emerald', icon: Shield, description: 'Defensa y bloqueo de sitios.' },
-    'Smoker': { label: 'Controladores', color: 'violet', icon: Cloud, description: 'Control de visión y territorio.' },
-    'Flex': { label: 'Flex', color: 'orange', icon: Activity, description: 'Jugadores versátiles.' },
+    'Initiator': { label: 'Iniciadores', color: 'emerald', icon: Zap, description: 'Recopilación de información y apoyo.' },
+    'Sentinel': { label: 'Centinelas', color: 'blue', icon: Shield, description: 'Defensa y bloqueo de sitios.' },
+    'Smoker': { label: 'Controladores', color: 'amber', icon: Cloud, description: 'Control de visión y territorio.' },
+    'Flex': { label: 'Flex', color: 'purple', icon: Activity, description: 'Jugadores versátiles.' },
     'Sixth': { label: 'Sexto Jugador', color: 'slate', icon: Users, description: 'El factor sorpresa estratégico.' }
 };
 

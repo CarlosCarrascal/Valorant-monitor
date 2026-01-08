@@ -1,192 +1,229 @@
-import { useState, useMemo } from 'react';
-import { Search, User, Filter, ArrowUpDown, X, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Search, Filter, X } from 'lucide-react';
 import { ROLE_COLORS } from '@/lib/constants';
 
-export default function VoterFeed({ voters, allCandidates = [] }) {
-    // Filtros
-    const [searchVoter, setSearchVoter] = useState('');
-    const [targetPlayer, setTargetPlayer] = useState(''); // Filtrar por "Votó por..."
-    const [sortNewest, setSortNewest] = useState(true);
+const ROW_HEIGHT = 52;
 
-    // Lógica de Filtrado y Ordenamiento
+// Prioridad de Roles
+const ROLE_PRIORITY = {
+    'Duelist': 1,
+    'Initiator': 2,
+    'Sentinel': 3,
+    'Controller': 4,
+    'Smoker': 4,
+    'Flex': 5,
+    'Sixth': 6
+};
+
+// --- AGENTE MINIMALISTA ---
+const AgentMinimal = ({ name, role }) => {
+    const color = ROLE_COLORS[role] || '#555';
+    
+    return (
+        <div 
+            className="flex flex-col gap-0.5 group/agent cursor-default" // Sin ? en el cursor
+            title={role.toUpperCase()} 
+        >
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover/agent:text-slate-200 transition-colors">
+                {name}
+            </span>
+            {/* Línea sutil (opacity 0.4) */}
+            <div 
+                className="h-[2px] w-full rounded-full transition-opacity" 
+                style={{ backgroundColor: color, opacity: 0.4 }} 
+            />
+        </div>
+    );
+};
+
+// --- FILA (Optimized) ---
+const VoterRow = React.memo(({ vote, style, index }) => {
+    const timeStr = vote.timestamp 
+        ? new Date(vote.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        : '--:--';
+
+    const sortedTeam = useMemo(() => {
+        return [...vote.team].sort((a, b) => {
+            const roleA = a.split('|')[1];
+            const roleB = b.split('|')[1];
+            return (ROLE_PRIORITY[roleA] || 99) - (ROLE_PRIORITY[roleB] || 99);
+        });
+    }, [vote.team]);
+
+    return (
+        <div 
+            style={style} 
+            className="flex items-center px-6 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group"
+        >
+            {/* Usuario */}
+            <div className="w-[240px] flex items-center gap-4 border-r border-white/[0.04] pr-4 mr-6 h-full">
+                <span className="font-mono text-[9px] text-slate-700">
+                    {String(index + 1).padStart(3, '0')}
+                </span>
+                <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center text-[10px] font-bold text-slate-300 border border-white/10">
+                    {vote.username.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col justify-center overflow-hidden">
+                    <span className="text-sm font-medium text-slate-200 truncate group-hover:text-[#ff4655] transition-colors">
+                        {vote.username}
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-600">
+                        {timeStr}
+                    </span>
+                </div>
+            </div>
+
+            {/* Squad */}
+            <div className="flex-1 flex items-center gap-6 overflow-hidden">
+                {sortedTeam.map((pick, i) => {
+                    const [name, role] = pick.split('|');
+                    return <AgentMinimal key={i} name={name} role={role} />;
+                })}
+            </div>
+        </div>
+    );
+});
+VoterRow.displayName = 'VoterRow';
+
+// --- MAIN FEED ---
+export default function VoterFeed({ voters, allCandidates = [] }) {
+    const [searchVoter, setSearchVoter] = useState('');
+    const [targetPlayer, setTargetPlayer] = useState('');
+    const [sortNewest, setSortNewest] = useState(true);
+    
+    // Estado para la altura dinámica
+    const [containerHeight, setContainerHeight] = useState(600);
+
     const filteredData = useMemo(() => {
         let result = [...voters];
-
-        // 1. Filtrar por nombre del votante
-        if (searchVoter) {
-            result = result.filter(v => 
-                v.username.toLowerCase().includes(searchVoter.toLowerCase())
-            );
-        }
-
-        // 2. Filtrar por "Votó por X jugador"
-        if (targetPlayer) {
-            result = result.filter(v => 
-                v.team.some(pick => pick.toUpperCase().startsWith(`${targetPlayer.toUpperCase()}|`))
-            );
-        }
-
-        // 3. Ordenar por fecha
+        if (searchVoter) result = result.filter(v => v.username.toLowerCase().includes(searchVoter.toLowerCase()));
+        if (targetPlayer) result = result.filter(v => v.team.some(pick => pick.toUpperCase().startsWith(`${targetPlayer.toUpperCase()}|`)));
         result.sort((a, b) => {
             const dateA = new Date(a.timestamp).getTime();
             const dateB = new Date(b.timestamp).getTime();
             return sortNewest ? dateB - dateA : dateA - dateB;
         });
-
         return result;
     }, [voters, searchVoter, targetPlayer, sortNewest]);
 
-    // Obtener lista única de nombres para el dropdown
     const candidateNames = useMemo(() => {
-        return allCandidates
-            .map(p => p.name)
-            .sort((a, b) => a.localeCompare(b));
+        const names = allCandidates.map(p => p.name);
+        return [...new Set(names)].sort((a, b) => a.localeCompare(b));
     }, [allCandidates]);
+
+    const parentRef = useRef(null);
+    const [scrollTop, setScrollTop] = useState(0);
+    const totalHeight = filteredData.length * ROW_HEIGHT;
+
+    // SENSOR DE REDIMENSIONAMIENTO (Para que la virtualización no se rompa al cambiar tamaño)
+    useEffect(() => {
+        if (!parentRef.current) return;
+        const resizeObserver = new ResizeObserver(() => {
+            if (parentRef.current) {
+                setContainerHeight(parentRef.current.clientHeight);
+            }
+        });
+        resizeObserver.observe(parentRef.current);
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    const onScroll = (e) => setScrollTop(e.currentTarget.scrollTop);
+    
+    // Cálculo virtual basado en la altura REAL actual (containerHeight)
+    const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
+    const endIndex = Math.min(
+        filteredData.length,
+        Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + 2
+    );
+
+    const visibleItems = useMemo(() => {
+        const items = [];
+        for (let i = startIndex; i < endIndex; i++) {
+            const vote = filteredData[i];
+            items.push(
+                <VoterRow 
+                    key={vote.id || i}
+                    vote={vote} 
+                    index={i}
+                    style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: `${ROW_HEIGHT}px`,
+                        transform: `translateY(${i * ROW_HEIGHT}px)`,
+                    }} 
+                />
+            );
+        }
+        return items;
+    }, [startIndex, endIndex, filteredData, containerHeight]); // Añadimos containerHeight a dependencias
 
     const clearFilters = () => {
         setSearchVoter('');
         setTargetPlayer('');
-        setSortNewest(true);
     };
 
-    const hasFilters = searchVoter || targetPlayer;
-
     return (
-        <div className="tech-panel rounded-sm h-[650px] flex flex-col overflow-hidden border-t-4 border-t-slate-600">
+        // CLASE RESPONSIVE:
+        // h-[500px]: Altura base para móviles/pantallas pequeñas.
+        // lg:h-[calc(100vh-240px)]: En escritorio, ocupa todo el alto disponible menos el header (aprox 240px).
+        <div className="flex flex-col font-sans h-[500px] lg:h-[calc(100vh-240px)] transition-all duration-300">
             
-            {/* --- CONTROL BAR --- */}
-            <div className="p-4 border-b border-white/10 bg-black/20 flex flex-col gap-4">
+            {/* Header */}
+            <div className="pb-4 flex flex-col gap-4 border-b border-white/[0.06] mb-2 shrink-0">
                 <div className="flex items-center justify-between">
-                    <h3 className="tech-label text-slate-300 flex items-center gap-2 text-sm font-bold">
-                        <User size={16} className="text-[#ff4655]"/> 
-                        INTEL FEED <span className="text-slate-600">// {filteredData.length} RECORDS</span>
+                    <h3 className="text-sm font-medium text-white tracking-widest uppercase opacity-80">
+                        Incoming Intel
+                        <span className="ml-2 text-[10px] text-slate-600 font-mono align-middle">
+                            // {filteredData.length} SIGNALS
+                        </span>
                     </h3>
-                    
-                    {/* Botón Reset */}
-                    {hasFilters && (
-                        <button 
-                            onClick={clearFilters}
-                            className="text-[10px] flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors uppercase font-mono"
-                        >
-                            <X size={12} /> Clear Filters
+                    {(searchVoter || targetPlayer) && (
+                        <button onClick={clearFilters} className="text-[10px] uppercase font-bold text-[#f43f5e] hover:text-white transition-colors flex items-center gap-1">
+                            <X size={12}/> Reset Feed
                         </button>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                    {/* Input: Buscar Votante */}
-                    <div className="col-span-12 md:col-span-5 relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-white transition-colors" size={14} />
+                <div className="flex gap-6 items-center">
+                    <div className="relative group">
+                        <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-white transition-colors" size={14} />
                         <input 
                             type="text" 
-                            placeholder="Search voter username..." 
+                            placeholder="FILTER BY USER ID" 
                             value={searchVoter}
                             onChange={(e) => setSearchVoter(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-sm py-2 pl-9 pr-4 text-xs font-mono text-white focus:outline-none focus:border-[#ff4655] focus:bg-white/5 transition-all"
+                            className="bg-transparent border-b border-white/10 py-1 pl-6 pr-4 w-48 text-xs font-mono text-slate-300 focus:outline-none focus:border-[#f43f5e] transition-colors placeholder:text-slate-700"
                         />
                     </div>
-
-                    {/* Select: Votó por... */}
-                    <div className="col-span-12 md:col-span-5 relative group">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-white transition-colors" size={14} />
+                    <div className="relative group flex items-center">
+                        <Filter className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-white transition-colors" size={14} />
                         <select 
                             value={targetPlayer}
                             onChange={(e) => setTargetPlayer(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-sm py-2 pl-9 pr-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-[#ff4655] focus:bg-white/5 appearance-none transition-all cursor-pointer"
+                            className="bg-transparent border-b border-white/10 py-1 pl-6 pr-8 w-48 text-xs font-mono text-slate-300 focus:outline-none focus:border-[#f43f5e] transition-colors appearance-none cursor-pointer"
                         >
-                            <option value="">Filter by: Voted For...</option>
+                            <option value="" className="bg-black">ALL AGENTS</option>
                             {candidateNames.map(name => (
-                                <option key={name} value={name}>{name}</option>
+                                <option key={name} value={name} className="bg-[#09090b] text-slate-300">{name}</option>
                             ))}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none border-l border-white/10 pl-2">
-                            <span className="text-[10px] text-slate-500">▼</span>
-                        </div>
                     </div>
-
-                    {/* Botón: Sort */}
                     <button 
                         onClick={() => setSortNewest(!sortNewest)}
-                        className="col-span-12 md:col-span-2 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm text-xs font-mono text-slate-300 transition-colors"
+                        className="ml-auto text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:text-white transition-colors"
                     >
-                        <ArrowUpDown size={12} />
-                        {sortNewest ? 'Newest' : 'Oldest'}
+                        {sortNewest ? 'SORT: NEWEST' : 'SORT: OLDEST'}
                     </button>
                 </div>
             </div>
 
-            {/* --- DATA LIST --- */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-gradient-to-b from-black/20 to-transparent">
-                {filteredData.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-600 gap-2">
-                        <Search size={32} className="opacity-20" />
-                        <p className="font-mono text-xs">NO INTEL FOUND MATCHING CRITERIA</p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-white/5">
-                        <AnimatePresence initial={false}>
-                            {filteredData.map((vote) => (
-                                <motion.div 
-                                    key={vote.id || Math.random()}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="p-4 hover:bg-white/5 transition-colors group"
-                                >
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
-                                        {/* User Info */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xs font-bold text-white border border-white/10">
-                                                {vote.username.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-sm text-slate-200 group-hover:text-[#ff4655] transition-colors">
-                                                    {vote.username}
-                                                </div>
-                                                <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500">
-                                                    <Clock size={10} />
-                                                    {vote.timestamp ? new Date(vote.timestamp).toLocaleString() : 'Unknown Time'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Team Grid */}
-                                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                                        {vote.team.map((pick, i) => {
-                                            const [name, role] = pick.split('|');
-                                            if (!name) return null;
-                                            
-                                            // Highlight si coincide con el filtro
-                                            const isTarget = targetPlayer && name.toUpperCase() === targetPlayer.toUpperCase();
-                                            const roleColor = ROLE_COLORS[role] || '#666';
-
-                                            return (
-                                                <div 
-                                                    key={i} 
-                                                    className={`
-                                                        relative overflow-hidden rounded-sm border p-1.5 flex flex-col gap-1
-                                                        ${isTarget ? 'bg-[#ff4655]/20 border-[#ff4655]' : 'bg-black/40 border-white/5'}
-                                                    `}
-                                                >
-                                                    <div className="flex items-center gap-1">
-                                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: roleColor }}></div>
-                                                        <span className="text-[9px] font-mono text-slate-500 uppercase truncate">
-                                                            {role}
-                                                        </span>
-                                                    </div>
-                                                    <span className={`text-xs font-bold truncate ${isTarget ? 'text-white' : 'text-slate-300'}`}>
-                                                        {name}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                )}
+            {/* LISTA (Flexible height) */}
+            <div className="flex-1 relative" ref={parentRef} onScroll={onScroll} style={{ overflowY: 'auto' }}>
+                <div style={{ height: `${totalHeight}px`, position: 'relative' }}>
+                    {filteredData.length > 0 ? visibleItems : (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                            <span className="text-xs font-mono tracking-[0.5em] text-white">NO SIGNAL DETECTED</span>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
