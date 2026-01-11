@@ -13,36 +13,45 @@ export function useVotingData(composition) {
         loading: true
     });
 
-    // Referencia para evitar bucles infinitos en el fetch
     const isFetching = useRef(false);
 
     const fetchData = useCallback(async (isAutoRefresh = false) => {
         if (isFetching.current) return;
         isFetching.current = true;
 
-        // Solo mostramos loading la primera vez, no en los refrescos automáticos
         if (!isAutoRefresh) setData(prev => ({ ...prev, loading: true }));
         
         try {
-            // Usamos Promise.allSettled para que si una falla, no rompa todo
             const [votesRes, sessionRes, playersRes] = await Promise.allSettled([
                 fetch('/api/votes'),
                 fetch('/api/session'),
                 fetch('/api/players')
             ]);
 
-            // Función helper para sacar datos seguros
             const getJson = async (res) => (res.status === 'fulfilled' && res.value.ok) ? await res.value.json() : null;
 
             const votesData = await getJson(votesRes);
             const sessionData = await getJson(sessionRes);
-            // Si players falla, usamos lo que ya teníamos o array vacío
             const playersData = await getJson(playersRes); 
             
             const rawVotes = votesData?.votes || [];
-            const players = playersData?.players || data.playersList || []; // Fallback seguro
+            let rawPlayers = playersData?.players || data.playersList || [];
 
-            // --- PROCESAMIENTO (Igual que antes) ---
+            // --- CORRECCIÓN 1: DEDUPLICACIÓN DE JUGADORES ---
+            // Si la API devuelve el mismo nombre dos veces, nos quedamos solo con uno.
+            // Esto evita que salgan repetidos en las cards.
+            const uniquePlayersMap = new Map();
+            rawPlayers.forEach(p => {
+                // Normalizamos el nombre (trim) para evitar duplicados por espacios
+                const nameKey = p.name.trim().toUpperCase();
+                if (!uniquePlayersMap.has(nameKey)) {
+                    uniquePlayersMap.set(nameKey, p);
+                }
+            });
+            const players = Array.from(uniquePlayersMap.values());
+
+
+            // --- PROCESAMIENTO DE VOTOS ---
             const playerVoteCounts = {};
             const votersList = rawVotes.map(vote => {
                 let teamSelection = [];
@@ -59,9 +68,15 @@ export function useVotingData(composition) {
                         teamSelection = parts;
                     }
                 }
+                
+                // Contamos los votos individuales
                 teamSelection.forEach(key => {
-                    if (key.includes('|')) playerVoteCounts[key] = (playerVoteCounts[key] || 0) + 1;
+                    if (key.includes('|')) {
+                        // key es "Nombre|Rol"
+                        playerVoteCounts[key] = (playerVoteCounts[key] || 0) + 1;
+                    }
                 });
+
                 return {
                     id: vote.id,
                     username: vote.username,
@@ -71,23 +86,36 @@ export function useVotingData(composition) {
                 };
             });
 
-            // Leaderboard
-            const roles = ['Duelist', 'Smoker', 'Sentinel', 'Initiator', 'Flex'];
+            // --- LEADERBOARD ---
+            // Incluimos todos los roles, incluido 'Sixth'
+            const roles = ['Duelist', 'Smoker', 'Sentinel', 'Initiator', 'Flex', 'Sixth'];
             const leaderboard = {};
+
             roles.forEach(role => {
-                const playersInRole = players.filter(p => p.role === role).map(p => {
-                    const key = `${p.name}|${role}`;
-                    const votes = playerVoteCounts[key] || 0;
-                    return { ...p, votes, key };
-                });
-                leaderboard[role] = playersInRole.sort((a, b) => b.votes - a.votes);
+                // Usamos la lista depurada 'players'
+                const playersInRole = players
+                    .map(p => {
+                        // Construimos la clave específica para ESTE rol
+                        // Si un jugador recibió votos como Duelist, tendrá votos aquí.
+                        // Si recibió votos como Sixth, tendrá votos allá.
+                        const key = `${p.name}|${role}`;
+                        const votes = playerVoteCounts[key] || 0;
+                        return { ...p, votes, key };
+                    })
+                    // FILTRO: Solo incluimos al jugador en esta lista si:
+                    // A) Tiene votos para este rol (> 0)
+                    // B) O su rol nativo es este (p.role === role)
+                    .filter(p => p.votes > 0 || p.role === role)
+                    .sort((a, b) => b.votes - a.votes);
+
+                leaderboard[role] = playersInRole;
             });
 
             setData(prev => ({
                 ...prev,
                 votesMap: playerVoteCounts,
                 rawVotesCount: rawVotes.length,
-                playersList: players,
+                playersList: players, // Guardamos la lista limpia
                 session: sessionData || prev.session,
                 leaderboard,
                 voters: votersList,
@@ -102,18 +130,15 @@ export function useVotingData(composition) {
         }
     }, [data.playersList]);
 
-    // 1. Fetch Inicial
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // 2. AUTO-REFRESH (Polling cada 5 segundos)
     useEffect(() => {
         const interval = setInterval(() => {
-            fetchData(true); // true = silencioso (sin spinner)
-        }, 5000); // 5000ms = 5 segundos
+            fetchData(true);
+        }, 5000);
         return () => clearInterval(interval);
     }, [fetchData]);
 
-    // 3. Cálculo de Equipo (Se mantiene reactivo)
     useEffect(() => {
         if (!data.loading && Object.keys(data.votesMap).length > 0) {
             const calculatedTeam = calculatePremierTeam(data.votesMap, composition);
@@ -132,5 +157,5 @@ export function useVotingData(composition) {
         }
     }, [data.votesMap, composition, data.loading, data.playersList]);
 
-    return data; // Ya no devolvemos 'refresh' porque es automático
+    return data;
 }

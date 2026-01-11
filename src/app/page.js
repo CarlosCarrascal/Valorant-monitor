@@ -13,9 +13,8 @@ import Footer from '@/components/dashboard/Footer';
 
 export default function Page() {
     const [activeTab, setActiveTab] = useState('squad');
-    // Configuración fija
     const [comp] = useState({ Duelist: 1, Smoker: 1, Sentinel: 1, Initiator: 1, Flex: 1, Sixth: 1 });
-    
+
     const { team, leaderboard, voters, playersList, session, loading } = useVotingData(comp);
 
     return (
@@ -23,34 +22,20 @@ export default function Page() {
             <DashboardHeader />
 
             <div className="grid grid-cols-12 gap-8 lg:gap-16 flex-1 items-start">
-                
-                {/* SIDEBAR */}
+
                 <aside className="col-span-12 xl:col-span-3 min-w-[340px] pt-2 sticky top-6 z-10">
-                    <SidebarControls 
-                        voters={voters}
-                        totalCandidates={playersList.length}
-                        sessionEnd={session?.end_time} 
-                    />
+                    <SidebarControls voters={voters} totalCandidates={playersList.length} sessionEnd={session?.end_time} />
                 </aside>
 
-                {/* MAIN CONTENT */}
                 <main className="col-span-12 xl:col-span-9 space-y-10 min-w-0">
-                    
-                    {/* TABS */}
+
                     <div className="flex gap-12 border-b border-white/5 pb-px overflow-x-auto">
-                        <NavButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')}>
-                            Final Protocol
-                        </NavButton>
-                        <NavButton active={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')}>
-                            Role Analysis
-                        </NavButton>
-                        <NavButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>
-                            Live Feed
-                        </NavButton>
+                        <NavButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')}>Final Protocol</NavButton>
+                        <NavButton active={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')}>Role Analysis</NavButton>
+                        <NavButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>Live Feed</NavButton>
                     </div>
 
                     <div className="min-h-[600px]">
-                        {/* VISTA 1: SQUAD */}
                         {activeTab === 'squad' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <AnimatePresence mode='popLayout'>
@@ -67,21 +52,20 @@ export default function Page() {
                             </div>
                         )}
 
-                        {/* VISTA 2: LEADERBOARD (AQUÍ ESTÁ EL CAMBIO) */}
-                        {/* Quitamos 'grid' y usamos 'flex-col' para que vayan uno debajo del otro */}
                         {activeTab === 'leaderboard' && (
                             <div className="flex flex-col gap-6 pb-12">
-                                {['Duelist', 'Initiator', 'Sentinel', 'Smoker', 'Flex'].map(role => (
-                                    <LeaderboardRole 
-                                        key={role} 
-                                        role={role} 
-                                        candidates={leaderboard[role] || []} 
+                                {/* AÑADIDO 'Sixth' A LA LISTA */}
+                                {['Duelist', 'Initiator', 'Sentinel', 'Smoker', 'Flex', 'Sixth'].map(role => (
+                                    <LeaderboardRole
+                                        key={role}
+                                        role={role}
+                                        candidates={leaderboard[role] || []}
+                                        voters={voters}
                                     />
                                 ))}
                             </div>
                         )}
 
-                        {/* VISTA 3: FEED */}
                         {activeTab === 'feed' && (
                             <VoterFeed voters={voters} allCandidates={playersList} />
                         )}
@@ -95,15 +79,8 @@ export default function Page() {
 
 function NavButton({ children, active, onClick }) {
     return (
-        <button 
-            onClick={onClick}
-            className={`pb-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-all duration-500 whitespace-nowrap
-                ${active 
-                    ? 'text-white border-b border-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
-                    : 'text-white/30 hover:text-white border-b border-transparent'
-                }`}
-        >
+        <button onClick={onClick} className={`pb-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-all duration-500 whitespace-nowrap ${active ? 'text-white border-b border-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'text-white/30 hover:text-white border-b border-transparent'}`}>
             {children}
         </button>
     );
-}
+}   
